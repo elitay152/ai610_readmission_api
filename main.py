@@ -1,12 +1,21 @@
 import pickle
+import os
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 from encoding import encode_input  # Import encoding function
 
-# Load the trained RandomForest model
-with open("rfc_model.pkl", "rb") as file:
-    model = pickle.load(file)
+model_path = "rfc_model.pkl"
+
+# Debugging: Check if model exists
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"❌ Model file '{model_path}' not found!")
+
+# Load the model
+with open(model_path, "rb") as file:
+    model = pickle.load(file)  # This is where the error happens
+
+print("✅ Model loaded successfully!")
 
 # Initialize FastAPI app
 app = FastAPI()
