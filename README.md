@@ -13,13 +13,15 @@ This is a **FastAPI-based Machine Learning API** that predicts whether a patient
 ---
 
 ## 🔍 API Endpoints
-📌 Home Route
-GET /
-Returns a simple message to confirm the API is running.
-📌 Predict Readmission
-POST /predict
-Request Body Example(JSON):
+#### 📌 Home Route
+- GET /
+- Returns a simple message to confirm the API is running.
+#### 📌 Predict Readmission
+- POST /predict
 
+---
+
+#### Request Body Example(JSON):
 {
   "number_outpatient": 2,
   "change": "Ch",
@@ -31,8 +33,7 @@ Request Body Example(JSON):
   "number_diagnoses": 3
 }
 
-Response Example (JSON):
-
+#### Response Example (JSON):
 {
   "prediction": "Yes",
   "risk_score": "87.6% probability of Yes readmission"
