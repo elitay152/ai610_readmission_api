@@ -20,7 +20,7 @@ This is a **FastAPI-based Machine Learning API** that predicts whether a patient
 
 ### 📌 Predict Readmission
 - **`POST /predict`**  
-
+  Returns a prediction and the associated probability.
 ---
 
 ## 📥 Request Body Example (JSON)
