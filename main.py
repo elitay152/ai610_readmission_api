@@ -1,5 +1,6 @@
 import pickle
 import os
+import subprocess
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -7,15 +8,18 @@ from encoding import encode_input  # Import encoding function
 
 model_path = "rfc_model.pkl"
 
-# Debugging: Check if model exists
-if not os.path.exists(model_path):
-    raise FileNotFoundError(f"❌ Model file '{model_path}' not found!")
+# Check if the file exists before loading
+if not os.path.exists(model_path) or os.path.getsize(model_path) < 1_000_000:  # Less than 1MB? Likely a pointer file!
+    print("❌ Model file missing or incomplete. Fetching from Git LFS...")
+    subprocess.run(["git", "lfs", "pull"], check=True)  # 🚀 Pulls actual model file
 
-# Load the model
-with open(model_path, "rb") as file:
-    model = pickle.load(file)  # This is where the error happens
-
-print("✅ Model loaded successfully!")
+# Now load the model
+try:
+    with open(model_path, "rb") as file:
+        model = pickle.load(file)
+    print("✅ Model loaded successfully!")
+except Exception as e:
+    print(f"❌ Error loading model: {e}")
 
 # Initialize FastAPI app
 app = FastAPI()
