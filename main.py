@@ -4,8 +4,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from encoding import encode_input  # Import encoding function
 import gdown
+import zipfile
 
-file_id = '1WiJdatcUnAWtMRdHc04qPqidKj0n8DYI'
+file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
+zip_path = "rfc_model.zip"
 model_path = "rfc_model.pkl"
 
 # Download the model
@@ -13,8 +15,15 @@ print("📥 Downloading model from Google Drive...")
 # Force direct download (bypass Google virus scan page)
 url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-# Use gdown to download the file
-gdown.download(url, model_path, quiet=False)
+# Download the ZIP file
+gdown.download(url, zip_path, quiet=False)
+
+# Extract the ZIP file
+print("📦 Extracting model...")
+with zipfile.ZipFile(zip_path, "r") as zip_ref:
+    zip_ref.extractall(".")
+
+print("✅ Model extracted successfully!")
 
 # Load the model
 try:
