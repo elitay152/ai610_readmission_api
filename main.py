@@ -5,15 +5,17 @@ import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 from encoding import encode_input  # Import encoding function
+import gdown
 
+file_id = '1WiJdatcUnAWtMRdHc04qPqidKj0n8DYI'
 model_path = "rfc_model.pkl"
+# If the model is missing, download it
+if not os.path.exists(model_path):
+    print("📥 Downloading model from Google Drive...")
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, model_path, quiet=False)
 
-# Check if the file exists before loading
-if not os.path.exists(model_path) or os.path.getsize(model_path) < 1_000_000:  # Less than 1MB? Likely a pointer file!
-    print("❌ Model file missing or incomplete. Fetching from Git LFS...")
-    subprocess.run(["git", "lfs", "pull"], check=True)  # 🚀 Pulls actual model file
-
-# Now load the model
+# Load the model
 try:
     with open(model_path, "rb") as file:
         model = pickle.load(file)
