@@ -7,47 +7,36 @@ from encoding import encode_input
 import gdown
 import zipfile
 import uvicorn
+from contextlib import asynccontextmanager
 
 # Google Drive model file ID
 file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
 zip_path = "rfc_model.zip"
 model_path = "rfc_model.pkl"
 
-# Check if the model file exists and is a valid size
-def is_valid_model(file_path, min_size_mb=5):
-    """Check if the model file exists and is at least `min_size_mb` MB."""
-    return os.path.exists(file_path) and os.path.getsize(file_path) > (min_size_mb * 1024 * 1024)
+# Lazy model loading
+model = None
 
-# Initialize FastAPI app
-app = FastAPI()
+def download_and_extract_model():
+    """Download and extract the model only if needed."""
+    if not os.path.exists(model_path):
+        print("📥 Model file missing. Downloading...")
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        gdown.download(url, zip_path, quiet=False)
 
-@app.on_event("startup")
-def load_model():
-    global model
-    print("🚀 Starting FastAPI server...")
+        print("📦 Extracting model...")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(".")
+        print("✅ Model extracted successfully!")
 
-    try:
-        if not is_valid_model(model_path):
-            print("📥 Model file missing or incomplete. Downloading compressed file from Google Drive...")
-            url = f"https://drive.google.com/uc?export=download&id={file_id}"
-            gdown.download(url, zip_path, quiet=False)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifecycle management (replaces @on_event)"""
+    print("🚀 FastAPI started successfully!")
+    yield  # No blocking startup tasks
 
-            print("📦 Extracting model...")
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(".")
-            print("✅ Model extracted successfully!")
+app = FastAPI(lifespan=lifespan)
 
-        # Load the model
-        print("📡 Loading model into memory...")
-        with open(model_path, "rb") as file:
-            model = pickle.load(file)
-        print("✅ Model loaded successfully!")
-
-    except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        model = None
-
-# Define request structure
 class ModelInput(BaseModel):
     number_outpatient: int
     change: str
@@ -64,8 +53,13 @@ def home():
 
 @app.post("/predict")
 def predict(data: ModelInput):
+    global model
     if model is None:
-        raise HTTPException(status_code=500, detail="Model not loaded. Check server logs.")
+        print("📡 Loading model into memory for the first time...")
+        download_and_extract_model()
+        with open(model_path, "rb") as file:
+            model = pickle.load(file)
+        print("✅ Model loaded successfully!")
 
     try:
         encoded_categorical = encode_input(data)
