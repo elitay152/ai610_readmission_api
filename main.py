@@ -18,20 +18,17 @@ MODEL_PATH = "rfc_model.pkl"
 # Global model variable
 model = None
 
-
 async def download_model():
-    """Download the model from Hugging Face if not already present."""
-    if not os.path.exists(MODEL_PATH):
-        print(f"📥 Downloading model from {HUGGING_FACE_MODEL_URL}...")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(HUGGING_FACE_MODEL_URL) as response:
-                if response.status == 200:
-                    with open(MODEL_PATH, "wb") as file:
-                        file.write(await response.read())
-                    print("✅ Model downloaded successfully!")
-                else:
-                    print(f"❌ Failed to download model. Status code: {response.status}")
-                    return
+    """Force re-download the model from Hugging Face every time."""
+    print(f"📥 Downloading model from {HUGGING_FACE_MODEL_URL}...")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(HUGGING_FACE_MODEL_URL) as response:
+            if response.status == 200:
+                with open(MODEL_PATH, "wb") as file:
+                    file.write(await response.read())
+                print("✅ Model downloaded successfully!")
+            else:
+                print(f"❌ Failed to download model. Status code: {response.status}")
 
 
 async def load_model():
