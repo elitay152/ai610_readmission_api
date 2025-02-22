@@ -2,7 +2,6 @@ import os
 import pickle
 import numpy as np
 import requests
-import zipfile
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -10,8 +9,8 @@ from encoding import encode_input
 from contextlib import asynccontextmanager
 import asyncio
 
-# Amazon S3 Model URL (replace with your actual S3 URL)
-S3_MODEL_URL = "https://ai610-readmissions-storage.s3.us-east-1.amazonaws.com/rfc_model.pkl"
+# Hugging Face model URL (replace with your actual link)
+HUGGING_FACE_MODEL_URL = "https://huggingface.co/emtay152/ai610-readmission-model/resolve/main/rfc_model.pkl"
 
 # Model File Paths
 model_path = "rfc_model.pkl"
@@ -20,10 +19,10 @@ model_path = "rfc_model.pkl"
 model = None
 
 async def download_model():
-    """Download the model from S3 if not already present."""
+    """Download the model from Hugging Face if not already present."""
     if not os.path.exists(model_path):
-        print(f"📥 Downloading model from {S3_MODEL_URL}...")
-        response = requests.get(S3_MODEL_URL, stream=True)
+        print(f"📥 Downloading model from {HUGGING_FACE_MODEL_URL}...")
+        response = requests.get(HUGGING_FACE_MODEL_URL, stream=True)
         if response.status_code == 200:
             with open(model_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
