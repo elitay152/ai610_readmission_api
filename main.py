@@ -5,25 +5,32 @@ from pydantic import BaseModel
 from encoding import encode_input  # Import encoding function
 import gdown
 import zipfile
+import os
 
 file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
 zip_path = "rfc_model.zip"
 model_path = "rfc_model.pkl"
 
-# Download the model
-print("📥 Downloading model from Google Drive...")
-# Force direct download (bypass Google virus scan page)
-url = f"https://drive.google.com/uc?export=download&id={file_id}"
+# Check if the model file exists and is a valid size
+def is_valid_model(file_path, min_size_mb=5):
+    """Check if the model file exists and is at least `min_size_mb` MB."""
+    return os.path.exists(file_path) and os.path.getsize(file_path) > (min_size_mb * 1024 * 1024)
 
-# Download the ZIP file
-gdown.download(url, zip_path, quiet=False)
-
-# Extract the ZIP file
-print("📦 Extracting model...")
-with zipfile.ZipFile(zip_path, "r") as zip_ref:
-    zip_ref.extractall(".")
-
-print("✅ Model extracted successfully!")
+if not is_valid_model(model_path):
+    print("📥 Model file missing or incomplete. Downloading compressed file from Google Drive...")
+    
+    # Force direct download (bypass Google Drive virus scan)
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    
+    # Download the ZIP file
+    gdown.download(url, zip_path, quiet=False)
+    
+    # Extract the ZIP file
+    print("📦 Extracting model...")
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
+        zip_ref.extractall(".")
+    
+    print("✅ Model extracted successfully!")
 
 # Load the model
 try:
