@@ -1,24 +1,28 @@
 import os
 import pickle
 import numpy as np
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from encoding import encode_input
 import gdown
 import zipfile
 import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from encoding import encode_input
 from contextlib import asynccontextmanager
+import asyncio
 
 # Google Drive model file ID
 file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
 zip_path = "rfc_model.zip"
 model_path = "rfc_model.pkl"
 
-# Lazy model loading
+# Global model variable
 model = None
 
-def download_and_extract_model():
-    """Download and extract the model only if needed."""
+async def load_model():
+    """Background task to load the model after FastAPI starts."""
+    global model
+    print("📡 Starting model download and extraction...")
+
     if not os.path.exists(model_path):
         print("📥 Model file missing. Downloading...")
         url = f"https://drive.google.com/uc?export=download&id={file_id}"
@@ -29,14 +33,26 @@ def download_and_extract_model():
             zip_ref.extractall(".")
         print("✅ Model extracted successfully!")
 
+    print("📡 Loading model into memory...")
+    try:
+        with open(model_path, "rb") as file:
+            model = pickle.load(file)
+        print("✅ Model loaded successfully!")
+    except Exception as e:
+        print(f"❌ Error loading model: {e}")
+        model = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifecycle management (replaces @on_event)"""
+    """FastAPI lifecycle hook to start background model loading."""
     print("🚀 FastAPI started successfully!")
-    yield  # No blocking startup tasks
+    asyncio.create_task(load_model())  # Start loading model in the background
+    yield  # Allow FastAPI to start immediately
 
+# Initialize FastAPI with lifespan
 app = FastAPI(lifespan=lifespan)
 
+# Request format
 class ModelInput(BaseModel):
     number_outpatient: int
     change: str
@@ -49,17 +65,12 @@ class ModelInput(BaseModel):
 
 @app.get("/")
 def home():
-    return {"message": "RandomForest API is running!"}
+    return {"message": "RandomForest API is running!", "model_loaded": model is not None}
 
 @app.post("/predict")
 def predict(data: ModelInput):
-    global model
     if model is None:
-        print("📡 Loading model into memory for the first time...")
-        download_and_extract_model()
-        with open(model_path, "rb") as file:
-            model = pickle.load(file)
-        print("✅ Model loaded successfully!")
+        raise HTTPException(status_code=503, detail="Model is still loading, try again later.")
 
     try:
         encoded_categorical = encode_input(data)
