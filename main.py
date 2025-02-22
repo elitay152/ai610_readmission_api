@@ -1,7 +1,7 @@
 import os
 import pickle
 import numpy as np
-import gdown
+import requests
 import zipfile
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -10,29 +10,40 @@ from encoding import encode_input
 from contextlib import asynccontextmanager
 import asyncio
 
-# Google Drive model file ID
-file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
-zip_path = "rfc_model.zip"
+# Amazon S3 Model URL (replace with your actual S3 URL)
+S3_MODEL_URL = "https://ai610-readmissions-storage.s3.us-east-1.amazonaws.com/rfc_model.pkl"
+
+# Model File Paths
 model_path = "rfc_model.pkl"
 
 # Global model variable
 model = None
 
+async def download_model():
+    """Download the model from S3 if not already present."""
+    if not os.path.exists(model_path):
+        print(f"📥 Downloading model from {S3_MODEL_URL}...")
+        response = requests.get(S3_MODEL_URL, stream=True)
+        if response.status_code == 200:
+            with open(model_path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+            print("✅ Model downloaded successfully!")
+        else:
+            print(f"❌ Failed to download model. Status code: {response.status_code}")
+            return
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifecycle hook to start background model loading."""
+    print("🚀 FastAPI started successfully!")
+    asyncio.create_task(load_model())  # Start model loading in the background
+    yield  # Allow FastAPI to start immediately
+
 async def load_model():
     """Background task to load the model after FastAPI starts."""
     global model
-    print("📡 Starting model download and extraction...")
-
-    if not os.path.exists(model_path):
-        print("📥 Model file missing. Downloading...")
-        url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        gdown.download(url, zip_path, quiet=False)
-
-        print("📦 Extracting model...")
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(".")
-        print("✅ Model extracted successfully!")
-
+    await download_model()  # Ensure model is downloaded first
     print("📡 Loading model into memory...")
     try:
         with open(model_path, "rb") as file:
@@ -42,17 +53,9 @@ async def load_model():
         print(f"❌ Error loading model: {e}")
         model = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """FastAPI lifecycle hook to start background model loading."""
-    print("🚀 FastAPI started successfully!")
-    asyncio.create_task(load_model())  # Start loading model in the background
-    yield  # Allow FastAPI to start immediately
-
 # Initialize FastAPI with lifespan
 app = FastAPI(lifespan=lifespan)
 
-# Request format
 class ModelInput(BaseModel):
     number_outpatient: int
     change: str
