@@ -1,11 +1,11 @@
 import pickle
 import os
-import subprocess
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 from encoding import encode_input  # Import encoding function
 import gdown
+import pickle
 
 file_id = '1WiJdatcUnAWtMRdHc04qPqidKj0n8DYI'
 model_path = "rfc_model.pkl"
@@ -14,7 +14,6 @@ if not os.path.exists(model_path):
     print("📥 Downloading model from Google Drive...")
     url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(url, model_path, quiet=False)
-
 # Load the model
 try:
     with open(model_path, "rb") as file:
