@@ -6,6 +6,7 @@ from encoding import encode_input  # Import encoding function
 import gdown
 import zipfile
 import os
+import uvicorn
 
 file_id = '1bo361_iBxWL421SDDk_NaN7Cq5izxmat'
 zip_path = "rfc_model.zip"
@@ -59,6 +60,7 @@ class ModelInput(BaseModel):
 def home():
     return {"message": "RandomForest API is running!"}
 
+
 @app.post("/predict")
 def predict(data: ModelInput):
     # Encode categorical values using the dictionary method
@@ -82,3 +84,9 @@ def predict(data: ModelInput):
         "prediction": display_category,  # Returns 'Yes' or 'No' for readmission
         "risk_score": f"{confidence_score}% probability of {display_category} readmission"
     }
+
+# Get Railway-assigned port (fallback to 8000 for local testing)
+PORT = int(os.environ.get("PORT", 8000))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
