@@ -29,7 +29,7 @@ This is a **FastAPI-based Machine Learning API** that predicts whether a patient
   "number_outpatient": 2,
   "change": "Ch",
   "gender": "Male",
-  "age": "30-60",
+  "age": "Age 20-70",
   "diabetesMed": "Yes",
   "time_in_hospital": 5,
   "num_medications": 10,
