@@ -1,0 +1,16 @@
+# railway.toml - Railway Project Configuration
+
+[service]
+name = "ai610-readmission-api"
+env = "production"
+
+[deploy]
+numReplicas = 1  # Set higher if you need more instances
+restartPolicyType = "ALWAYS"
+healthcheckPath = "/"
+
+[build]
+builder = "paketobuildpacks/builder:base"
+
+[start]
+cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"

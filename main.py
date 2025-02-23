@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import pandas as pd
 import uvicorn
 import aiohttp
 import asyncio
@@ -85,10 +86,22 @@ def predict(data: ModelInput):
         raise HTTPException(status_code=503, detail="Model is still loading, try again later.")
 
     try:
+        # Encode categorical features correctly
         encoded_categorical = encode_input(data)
-        X_input = np.array([[data.number_outpatient] + encoded_categorical +
-                            [data.time_in_hospital, data.num_medications, data.number_diagnoses]])
 
+        # Define feature names (should match trained model's feature order)
+        feature_names = [
+            "number_outpatient", "change", "gender", "age", "diabetesMed",
+            "time_in_hospital", "num_medications", "number_diagnoses"
+        ]
+
+        # Convert input to DataFrame with correct feature names
+        X_input = pd.DataFrame([[
+            data.number_outpatient, *encoded_categorical,  # Unpack encoded categorical values
+            data.time_in_hospital, data.num_medications, data.number_diagnoses
+        ]], columns=feature_names)
+
+        # Make predictions
         probabilities = model.predict_proba(X_input)[0]
         predicted_class = model.predict(X_input)[0]
         confidence_score = round(probabilities[predicted_class] * 100, 2)
@@ -101,7 +114,6 @@ def predict(data: ModelInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
-
 
 # Run FastAPI server
 PORT = int(os.environ.get("PORT", 8000))
