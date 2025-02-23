@@ -1,5 +1,3 @@
-# railway.toml - Railway Project Configuration
-
 [service]
 name = "ai610-readmission-api"
 env = "production"
